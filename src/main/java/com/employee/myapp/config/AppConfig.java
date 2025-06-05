@@ -9,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -38,17 +39,19 @@ public class AppConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
+
+/*    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Allow your React app's origin
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Allow common HTTP methods
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type")); // Allow necessary headers
-        configuration.setAllowCredentials(true); // Allow sending cookies/auth headers
+        // Allow both React app and API Gateway origins
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8085")); // Added 8085 for Gateway
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply this CORS config to all paths
+        source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
+    }*/
 
     @Bean
     public AuthenticationManager authenticationManager(){
@@ -57,22 +60,29 @@ public class AppConfig {
         daoAuthenticationProvider.setPasswordEncoder(bCryptPasswordEncoder());
         return new ProviderManager(daoAuthenticationProvider);
     }
+
+/*    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }*/
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf((csrf) -> csrf.disable())
-                .cors((cors) -> cors.configurationSource(corsConfigurationSource()))
+                //.cors((cors) -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests((authz) -> authz
-                        .requestMatchers("/h2-console/**").permitAll() // Allow access to H2 Console
-                        .requestMatchers("/api/employees").permitAll()
-                        .requestMatchers("/authenticate").permitAll()
-                        .requestMatchers("/api/employees/{username}").authenticated()
-                        .anyRequest().permitAll()
+                        // Permit all requests to /api/auth/** (login and register)
+                        .requestMatchers("/api/auth/**").permitAll() // <--- THIS IS THE KEY PATH
+                        .requestMatchers("/h2-console/**").permitAll()
+                        // All other requests MUST be authenticated
+                        .anyRequest().authenticated()
                 )
+
                 .headers((headers) -> headers
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 );
-        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        // http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
