@@ -44,4 +44,5 @@ jobs:
               sudo yum install -y java-17-amazon-corretto
             fi
             pkill -f 'java -jar' || true
-            nohup java -jar ~/$(ls *.jar | head -n 1) > app.log 2>&1 &
+            cd ~/target
+            nohup java -jar $(ls *.jar | head -n 1) > app.log 2>&1 &
