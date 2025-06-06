@@ -7,6 +7,7 @@ import com.employee.myapp.services.EmployeeService;
 import com.employee.myapp.utilities.JWTUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -56,18 +57,27 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/register") // Full path: /api/auth/register
+    @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> registerUser(@RequestBody Employee employee) {
-        String message = employeeService.addEmployee(employee);
-        if (message.equals("yes")) {
-            UserDetails userDetails = customUserDetailService.loadUserByUsername(employee.getUsername());
-            String token = jwtUtility.generateJWT(userDetails.getUsername());
-            Map<String, String> response = new HashMap<>();
-            response.put("token", token);
-            response.put("message", "User registered successfully");
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", message));
+        try {
+            String message = employeeService.addEmployee(employee);
+            if (message.equals("yes")) {
+                UserDetails userDetails = customUserDetailService.loadUserByUsername(employee.getUsername());
+                String token = jwtUtility.generateJWT(userDetails.getUsername());
+                Map<String, String> response = new HashMap<>();
+                response.put("token", token);
+                response.put("message", "User registered successfully");
+                System.out.println("User registered successfully"+token);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            } else {
+                System.out.println("bad request");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", message));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Internal server error: " + ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 }
