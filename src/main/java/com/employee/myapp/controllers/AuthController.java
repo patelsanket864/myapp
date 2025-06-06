@@ -1,7 +1,9 @@
 package com.employee.myapp.controllers;
 
 import com.employee.myapp.models.Authenticate;
+import com.employee.myapp.models.Employee;
 import com.employee.myapp.services.CustomUserDetailService;
+import com.employee.myapp.services.EmployeeService;
 import com.employee.myapp.utilities.JWTUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,8 @@ public class AuthController {
     @Autowired
     private JWTUtility jwtUtility;
 
+    @Autowired
+    EmployeeService employeeService;
 
     @Autowired
     CustomUserDetailService customUserDetailService;
@@ -52,12 +56,12 @@ public class AuthController {
         }
     }
 
-/*    @PostMapping("/register") // Full path: /api/auth/register
+    @PostMapping("/register") // Full path: /api/auth/register
     public ResponseEntity<Map<String, String>> registerUser(@RequestBody Employee employee) {
         String message = employeeService.addEmployee(employee);
         if (message.equals("yes")) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(employee.getUsername());
-            String token = jwtService.generateToken(userDetails);
+            UserDetails userDetails = customUserDetailService.loadUserByUsername(employee.getUsername());
+            String token = jwtUtility.generateJWT(userDetails.getUsername());
             Map<String, String> response = new HashMap<>();
             response.put("token", token);
             response.put("message", "User registered successfully");
@@ -65,5 +69,5 @@ public class AuthController {
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", message));
         }
-    }*/
+    }
 }

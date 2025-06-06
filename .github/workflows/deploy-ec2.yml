@@ -1,0 +1,42 @@
+name: Deploy master branch to ec2
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Build With Maven
+        run: mvn clean package -DskipTests
+
+      - name: Copy JAR file to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "target/*.jar"
+          target: "~/"
+
+      - name: Run JAR on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            pkill -f 'java -jar' || true
+            nohup java -jar ~/$(ls *.jar | head -n 1) > app.log 2>&1 &
