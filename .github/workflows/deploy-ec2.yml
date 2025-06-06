@@ -43,6 +43,13 @@ jobs:
               sudo yum update -y
               sudo yum install -y java-17-amazon-corretto
             fi
-            pkill -f 'java -jar' || true
-            cd ~/target
-            nohup java -jar $(ls *.jar | head -n 1) > app.log 2>&1 &
+            
+            # Kill only Java processes in target directory (safer)
+            JAR_PATH=$(find ~/target -maxdepth 1 -name "*.jar" | head -n 1)
+            if [ -n "$JAR_PATH" ]; then
+              pkill -f "$JAR_PATH" || true
+              cd ~/target
+              nohup java -jar "$JAR_PATH" > app.log 2>&1 &
+            else
+              echo "No JAR found in ~/target"
+            fi
